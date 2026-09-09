@@ -11,6 +11,8 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
+import { Route as AuthenticatedChatRouteImport } from './routes/_authenticated/chat'
 import { Route as AuthenticatedEmailRouteImport } from './routes/_authenticated/email'
 import { Route as AuthenticatedMeetingsRouteImport } from './routes/_authenticated/meetings'
 import { Route as AuthenticatedResearchRouteImport } from './routes/_authenticated/research'
@@ -24,6 +26,16 @@ const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedChatRoute = AuthenticatedChatRouteImport.update({
+  id: '/chat',
+  path: '/chat',
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedEmailRoute = AuthenticatedEmailRouteImport.update({
   id: '/email',
@@ -47,43 +59,50 @@ const AuthenticatedTasksRoute = AuthenticatedTasksRouteImport.update({
 } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof AuthenticatedRouteRouteWithChildren
+  '/': typeof AuthenticatedIndexRoute
   '/auth': typeof AuthRoute
+  '/chat': typeof AuthenticatedChatRoute
   '/email': typeof AuthenticatedEmailRoute
   '/meetings': typeof AuthenticatedMeetingsRoute
   '/research': typeof AuthenticatedResearchRoute
   '/tasks': typeof AuthenticatedTasksRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
+  '/chat': typeof AuthenticatedChatRoute
   '/email': typeof AuthenticatedEmailRoute
   '/meetings': typeof AuthenticatedMeetingsRoute
   '/research': typeof AuthenticatedResearchRoute
   '/tasks': typeof AuthenticatedTasksRoute
+  '/': typeof AuthenticatedIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
+  '/_authenticated/chat': typeof AuthenticatedChatRoute
   '/_authenticated/email': typeof AuthenticatedEmailRoute
   '/_authenticated/meetings': typeof AuthenticatedMeetingsRoute
   '/_authenticated/research': typeof AuthenticatedResearchRoute
   '/_authenticated/tasks': typeof AuthenticatedTasksRoute
+  '/_authenticated/': typeof AuthenticatedIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/email' | '/meetings' | '/research' | '/tasks'
+  fullPaths:
+    '/' | '/auth' | '/chat' | '/email' | '/meetings' | '/research' | '/tasks'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/email' | '/meetings' | '/research' | '/tasks'
+  to: '/auth' | '/chat' | '/email' | '/meetings' | '/research' | '/tasks' | '/'
   id:
     | '__root__'
     | '/_authenticated'
     | '/auth'
+    | '/_authenticated/chat'
     | '/_authenticated/email'
     | '/_authenticated/meetings'
     | '/_authenticated/research'
     | '/_authenticated/tasks'
+    | '/_authenticated/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -106,6 +125,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/auth'
       preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/': {
+      id: '/_authenticated/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/chat': {
+      id: '/_authenticated/chat'
+      path: '/chat'
+      fullPath: '/chat'
+      preLoaderRoute: typeof AuthenticatedChatRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/email': {
       id: '/_authenticated/email'
@@ -139,17 +172,21 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedChatRoute: typeof AuthenticatedChatRoute
   AuthenticatedEmailRoute: typeof AuthenticatedEmailRoute
   AuthenticatedMeetingsRoute: typeof AuthenticatedMeetingsRoute
   AuthenticatedResearchRoute: typeof AuthenticatedResearchRoute
   AuthenticatedTasksRoute: typeof AuthenticatedTasksRoute
+  AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedChatRoute: AuthenticatedChatRoute,
   AuthenticatedEmailRoute: AuthenticatedEmailRoute,
   AuthenticatedMeetingsRoute: AuthenticatedMeetingsRoute,
   AuthenticatedResearchRoute: AuthenticatedResearchRoute,
   AuthenticatedTasksRoute: AuthenticatedTasksRoute,
+  AuthenticatedIndexRoute: AuthenticatedIndexRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
