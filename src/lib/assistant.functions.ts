@@ -32,13 +32,14 @@ function errorStatus(error: unknown): number | undefined {
   return typeof status === "number" ? status : undefined;
 }
 
-async function runModel(messages: ModelMessage[]): Promise<string> {
+async function runModel(instructions: string, messages: ModelMessage[]): Promise<string> {
   const key = process.env["LOVABLE_API_KEY"];
   if (!key) throw new Error("AI is not configured for this app.");
   const gateway = createLovableAiResponsesProvider(key);
   try {
     const result = streamText({
       model: gateway.responses(AI_MODEL),
+      instructions,
       messages,
       maxRetries: 0,
       providerOptions: {
@@ -70,8 +71,7 @@ export const generateContent = createServerFn({ method: "POST" })
   )
   .handler(async ({ data }) => {
     const prompt = promptForKind(data);
-    const content = await runModel([
-      { role: "system", content: prompt.role },
+    const content = await runModel(prompt.role, [
       { role: "user", content: buildUserPrompt(prompt) },
     ]);
     return { content };
@@ -194,15 +194,12 @@ export const sendChatMessage = createServerFn({ method: "POST" })
       .order("created_at", { ascending: true })
       .limit(40);
 
-    const messages: ModelMessage[] = [
-      { role: "system", content: CHAT_SYSTEM_PROMPT },
-      ...(history ?? []).map((m) => ({
+    const messages: ModelMessage[] = (history ?? []).map((m) => ({
         role: m.role === "assistant" ? ("assistant" as const) : ("user" as const),
         content: m.content,
-      })),
-    ];
+      }));
 
-    const reply = await runModel(messages);
+    const reply = await runModel(CHAT_SYSTEM_PROMPT, messages);
     const { data: row, error } = await supabase
       .from("chat_messages")
       .insert({ user_id: userId, role: "assistant", content: reply })
