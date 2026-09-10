@@ -4,7 +4,7 @@ import { streamText, type ModelMessage } from "ai";
 import { z } from "zod";
 import {
   AI_MODEL,
-  createLovableAiGatewayProvider,
+  createLovableAiResponsesProvider,
 } from "./ai-gateway.server";
 import { CHAT_SYSTEM_PROMPT, promptForKind } from "./prompt-builder";
 
@@ -15,22 +15,48 @@ function gatewayError(status: number): string {
   if (status === 402)
     return "This workspace has run out of AI credits. Add credits in Lovable to keep generating.";
   if (status === 403) return "AI access is currently blocked for this workspace.";
+  if (status === 400) return "The assistant request was not accepted. Please revise your input and try again.";
+  if (status === 401) return "AI is not configured correctly for this app.";
   return "The assistant could not complete that request. Please try again.";
+}
+
+function errorStatus(error: unknown): number | undefined {
+  if (!error || typeof error !== "object") return undefined;
+  const candidate = error as {
+    status?: unknown;
+    statusCode?: unknown;
+    cause?: { status?: unknown; statusCode?: unknown };
+  };
+  const status = candidate.statusCode ?? candidate.status ??
+    candidate.cause?.statusCode ?? candidate.cause?.status;
+  return typeof status === "number" ? status : undefined;
 }
 
 async function runModel(messages: ModelMessage[]): Promise<string> {
   const key = process.env["LOVABLE_API_KEY"];
   if (!key) throw new Error("AI is not configured for this app.");
-  const gateway = createLovableAiGatewayProvider(key);
+  const gateway = createLovableAiResponsesProvider(key);
   try {
-    const result = streamText({ model: gateway(AI_MODEL), messages });
+    const result = streamText({
+      model: gateway.responses(AI_MODEL),
+      messages,
+      maxRetries: 0,
+      providerOptions: {
+        openai: {
+          forceReasoning: true,
+          reasoningEffort: "medium",
+          reasoningSummary: "auto",
+          store: false,
+          include: ["reasoning.encrypted_content"],
+        },
+      },
+    });
     const text = await result.text;
     if (!text.trim()) throw new Error("The assistant returned an empty response. Try again.");
     return text;
   } catch (error) {
-    const status = (error as { statusCode?: number; status?: number })?.statusCode ??
-      (error as { status?: number })?.status;
-    if (typeof status === "number") throw new Error(gatewayError(status));
+    const status = errorStatus(error);
+    if (status !== undefined) throw new Error(gatewayError(status));
     throw error instanceof Error ? error : new Error("Unexpected AI error.");
   }
 }
